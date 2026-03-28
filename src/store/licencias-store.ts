@@ -2,6 +2,11 @@ import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
 import type { Licencia, LicenciaInsert, LicenciaUpdate } from "@/types/licencia";
 
+// Enriquece mensajes de error de Supabase con instrucciones de solución RLS
+function RLS_HINT(msg: string): string {
+  return `${msg}\n\n→ Solución: en el panel de Supabase ve a Table Editor → licencias → Policies y añade políticas para INSERT, UPDATE y DELETE con condición "true".`;
+}
+
 type EstadoFiltro = "todas" | "activas" | "inactivas";
 
 interface LicenciasState {
@@ -51,22 +56,28 @@ export const useLicenciasStore = create<LicenciasState>((set, get) => ({
       throw new Error("Ya existe una licencia con esa clave");
     }
 
-    const { error } = await supabase.from("licencias").insert({
-      clave: data.clave.toUpperCase(),
-      nombre: data.nombre,
-      activa: data.activa,
-      permisos: data.permisos,
-      vence_en: data.vence_en || null,
-    });
+    const { data: inserted, error } = await supabase
+      .from("licencias")
+      .insert({
+        clave: data.clave.toUpperCase(),
+        nombre: data.nombre,
+        activa: data.activa,
+        permisos: data.permisos,
+        vence_en: data.vence_en || null,
+      })
+      .select("id");
 
     if (error) {
-      throw new Error(error.message);
+      throw new Error(RLS_HINT(error.message));
+    }
+    if (!inserted?.length) {
+      throw new Error(RLS_HINT("La inserción no fue permitida por las políticas de seguridad (RLS) de Supabase."));
     }
     await get().fetchLicencias();
   },
 
   actualizarLicencia: async (id: string, data: LicenciaUpdate) => {
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("licencias")
       .update({
         nombre: data.nombre,
@@ -74,21 +85,25 @@ export const useLicenciasStore = create<LicenciasState>((set, get) => ({
         permisos: data.permisos,
         vence_en: data.vence_en || null,
       })
-      .eq("id", id);
+      .eq("id", id)
+      .select("id");
 
     if (error) {
-      throw new Error(error.message);
+      throw new Error(RLS_HINT(error.message));
+    }
+    if (!updated?.length) {
+      throw new Error(RLS_HINT("La actualización no fue aplicada. Verifica las políticas RLS de Supabase."));
     }
 
     const { licenciaSeleccionada } = get();
     if (licenciaSeleccionada?.id === id) {
-      const { data: updated } = await supabase
+      const { data: refreshed } = await supabase
         .from("licencias")
         .select("*")
         .eq("id", id)
         .single();
-      if (updated) {
-        set({ licenciaSeleccionada: updated as Licencia });
+      if (refreshed) {
+        set({ licenciaSeleccionada: refreshed as Licencia });
       }
     }
 
@@ -96,10 +111,17 @@ export const useLicenciasStore = create<LicenciasState>((set, get) => ({
   },
 
   eliminarLicencia: async (id: string) => {
-    const { error } = await supabase.from("licencias").delete().eq("id", id);
+    const { data: deleted, error } = await supabase
+      .from("licencias")
+      .delete()
+      .eq("id", id)
+      .select("id");
 
     if (error) {
-      throw new Error(error.message);
+      throw new Error(RLS_HINT(error.message));
+    }
+    if (!deleted?.length) {
+      throw new Error(RLS_HINT("La eliminación no fue permitida por las políticas de seguridad (RLS) de Supabase."));
     }
 
     const { licenciaSeleccionada } = get();
