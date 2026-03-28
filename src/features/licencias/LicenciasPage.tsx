@@ -7,6 +7,7 @@ import {
   Trash2,
   Check,
   X as XIcon,
+  Link2,
 } from "lucide-react";
 import { useLicenciasStore } from "@/store/licencias-store";
 import { Button } from "@/components/ui/button";
@@ -179,6 +180,7 @@ export function LicenciasPage() {
                   <TableHead>Clave</TableHead>
                   <TableHead>Nombre</TableHead>
                   <TableHead>Estado</TableHead>
+                  <TableHead>Equipo</TableHead>
                   <TableHead>Permisos</TableHead>
                   <TableHead>Vencimiento</TableHead>
                   <TableHead>Creación</TableHead>
@@ -208,6 +210,16 @@ export function LicenciasPage() {
                         <Badge variant="success">Activa</Badge>
                       ) : (
                         <Badge variant="destructive">Inactiva</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {lic.machine_id ? (
+                        <Badge variant="default" className="gap-1">
+                          <Link2 className="h-3 w-3" />
+                          Vinculado
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary">Sin vincular</Badge>
                       )}
                     </TableCell>
                     <TableCell>

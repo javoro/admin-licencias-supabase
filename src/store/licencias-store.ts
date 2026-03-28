@@ -21,6 +21,7 @@ interface LicenciasState {
   crearLicencia: (data: LicenciaInsert) => Promise<void>;
   actualizarLicencia: (id: string, data: LicenciaUpdate) => Promise<void>;
   eliminarLicencia: (id: string) => Promise<void>;
+  desvincularMaquina: (id: string) => Promise<void>;
   verificarClaveExiste: (clave: string) => Promise<boolean>;
   setFiltro: (filtro: string) => void;
   setEstadoFiltro: (estado: EstadoFiltro) => void;
@@ -127,6 +128,28 @@ export const useLicenciasStore = create<LicenciasState>((set, get) => ({
     const { licenciaSeleccionada } = get();
     if (licenciaSeleccionada?.id === id) {
       set({ licenciaSeleccionada: null });
+    }
+
+    await get().fetchLicencias();
+  },
+
+  desvincularMaquina: async (id: string) => {
+    const { data: updated, error } = await supabase
+      .from("licencias")
+      .update({ machine_id: null })
+      .eq("id", id)
+      .select("id");
+
+    if (error) {
+      throw new Error(RLS_HINT(error.message));
+    }
+    if (!updated?.length) {
+      throw new Error(RLS_HINT("La desvinculación no fue aplicada. Verifica las políticas RLS de Supabase."));
+    }
+
+    const { licenciaSeleccionada } = get();
+    if (licenciaSeleccionada?.id === id) {
+      set({ licenciaSeleccionada: { ...licenciaSeleccionada, machine_id: null } });
     }
 
     await get().fetchLicencias();
