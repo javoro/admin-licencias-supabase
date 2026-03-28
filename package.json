@@ -1,0 +1,64 @@
+{
+  "name": "admin-licencias",
+  "version": "1.0.0",
+  "description": "Administración de licencias de software",
+  "main": "dist-electron/main/main.js",
+  "scripts": {
+    "dev:vite": "vite --port 5174",
+    "dev:electron-watch": "tsc -p tsconfig.electron.json --watch",
+    "dev:electron": "wait-on http://localhost:5174 && cross-env VITE_DEV_SERVER_URL=http://localhost:5174 electron .",
+    "dev": "tsc -p tsconfig.electron.json && concurrently -k -n vite,tsc,electron \"npm run dev:vite\" \"npm run dev:electron-watch\" \"npm run dev:electron\"",
+    "build": "tsc -p tsconfig.electron.json && vite build",
+    "dist": "npm run build && electron-builder",
+    "typecheck": "tsc --noEmit"
+  },
+  "build": {
+    "appId": "com.admin.licencias",
+    "productName": "Administrador de Licencias",
+    "icon": "resources/icon.png",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.100.1",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.7.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.5.0",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.4.27",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^41.1.0",
+    "electron-builder": "^26.8.1",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^3.4.19",
+    "typescript": "^6.0.2",
+    "vite": "^5.4.21",
+    "wait-on": "^9.0.4"
+  }
+}
