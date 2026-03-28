@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, nativeImage } from "electron";
+import { autoUpdater } from "electron-updater";
 import path from "path";
 
 let mainWindow: BrowserWindow | null = null;
@@ -32,7 +33,30 @@ function createWindow() {
   });
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+
+  // Solo verificar actualizaciones en producción
+  if (!process.env.VITE_DEV_SERVER_URL) {
+    autoUpdater.checkForUpdatesAndNotify();
+  }
+});
+
+autoUpdater.on("update-available", (info) => {
+  mainWindow?.webContents.send("update-available", info);
+});
+
+autoUpdater.on("update-downloaded", (info) => {
+  mainWindow?.webContents.send("update-downloaded", info);
+});
+
+autoUpdater.on("error", (err) => {
+  mainWindow?.webContents.send("update-error", err.message);
+});
+
+ipcMain.on("install-update", () => {
+  autoUpdater.quitAndInstall();
+});
 
 app.on("window-all-closed", () => {
   app.quit();
