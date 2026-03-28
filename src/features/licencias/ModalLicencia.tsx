@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Shuffle, Save, X } from "lucide-react";
+import { Shuffle, Save, X, Unlink } from "lucide-react";
 import { useLicenciasStore } from "@/store/licencias-store";
 import { generarClave } from "@/lib/generar-clave";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ interface ModalLicenciaProps {
 }
 
 export function ModalLicencia({ open, onClose, licencia }: ModalLicenciaProps) {
-  const { crearLicencia, actualizarLicencia } = useLicenciasStore();
+  const { crearLicencia, actualizarLicencia, desvincularMaquina } = useLicenciasStore();
   const isEditing = !!licencia;
 
   const [nombre, setNombre] = useState("");
@@ -33,9 +33,12 @@ export function ModalLicencia({ open, onClose, licencia }: ModalLicenciaProps) {
   const [permisos, setPermisos] = useState<Permisos>({ ...DEFAULT_PERMISOS });
   const [venceEn, setVenceEn] = useState("");
   const [saving, setSaving] = useState(false);
+  const [unlinkConfirm, setUnlinkConfirm] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
 
   useEffect(() => {
     if (open) {
+      setUnlinkConfirm(false);
       if (licencia) {
         setNombre(licencia.nombre);
         setClave(licencia.clave);
@@ -58,6 +61,21 @@ export function ModalLicencia({ open, onClose, licencia }: ModalLicenciaProps) {
 
   const handlePermisoChange = (key: keyof Permisos, value: boolean) => {
     setPermisos((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleDesvincular = async () => {
+    if (!licencia) return;
+    setUnlinking(true);
+    try {
+      await desvincularMaquina(licencia.id);
+      toast.success("Licencia desvinculada correctamente");
+      onClose();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Error desconocido";
+      toast.error(message);
+    } finally {
+      setUnlinking(false);
+    }
   };
 
   const handleGuardar = async () => {
@@ -202,6 +220,62 @@ export function ModalLicencia({ open, onClose, licencia }: ModalLicenciaProps) {
               className="w-48"
             />
           </div>
+
+          {/* Desvincular equipo */}
+          {isEditing && licencia?.machine_id && (
+            <div className="rounded-md border border-border bg-muted/30 p-3 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">Equipo vinculado</p>
+                  <p className="text-xs text-muted-foreground font-mono truncate">
+                    {licencia.machine_id}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setUnlinkConfirm(true)}
+                  disabled={saving || unlinking || unlinkConfirm}
+                >
+                  <Unlink className="h-4 w-4" />
+                  Desvincular
+                </Button>
+              </div>
+              {unlinkConfirm && (
+                <div className="rounded border border-yellow-500/30 bg-yellow-500/10 p-2 space-y-2">
+                  <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                    ¿Desvincular esta licencia de su equipo actual? El próximo equipo que la active quedará registrado.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      className="h-7 text-xs"
+                      onClick={handleDesvincular}
+                      disabled={unlinking}
+                    >
+                      {unlinking ? (
+                        <span className="animate-spin h-3 w-3 border border-current border-t-transparent rounded-full" />
+                      ) : (
+                        <Unlink className="h-3 w-3" />
+                      )}
+                      Confirmar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 text-xs"
+                      onClick={() => setUnlinkConfirm(false)}
+                      disabled={unlinking}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Acciones */}
           <div className="flex justify-end gap-2 pt-2">

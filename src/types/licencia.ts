@@ -13,10 +13,11 @@ export interface Licencia {
   activa: boolean;
   permisos: Permisos;
   vence_en: string | null;
+  machine_id: string | null;
   created_at: string;
 }
 
-export type LicenciaInsert = Omit<Licencia, "id" | "created_at">;
+export type LicenciaInsert = Omit<Licencia, "id" | "created_at" | "machine_id">;
 export type LicenciaUpdate = Partial<Omit<Licencia, "id" | "created_at" | "clave">>;
 
 export const PERMISOS_LABELS: Record<keyof Permisos, string> = {

@@ -75,6 +75,16 @@ export function DetalleLicencia({ licencia, onClose }: DetalleLicenciaProps) {
           </div>
         </div>
 
+        {/* Equipo vinculado */}
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">Equipo vinculado</p>
+          {licencia.machine_id ? (
+            <p className="text-xs font-mono break-all">{licencia.machine_id}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground">Sin vincular</p>
+          )}
+        </div>
+
         {/* Nombre */}
         <div>
           <p className="text-xs text-muted-foreground mb-1">Nombre</p>
