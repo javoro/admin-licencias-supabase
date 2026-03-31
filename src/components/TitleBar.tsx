@@ -1,4 +1,5 @@
 import { Minus, Square, X } from "lucide-react";
+import iconUrl from "/icon.png";
 
 export function TitleBar() {
   const minimize = () => window.electronAPI?.minimize();
@@ -10,7 +11,7 @@ export function TitleBar() {
       style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
     >
       <div className="flex items-center gap-2 px-3">
-        <img src="/icon.png" alt="" className="h-4 w-4" />
+        <img src={iconUrl} alt="" className="h-4 w-4" />
         <span className="text-xs font-semibold tracking-wide text-muted-foreground">
           ADMINISTRADOR DE LICENCIAS
         </span>
