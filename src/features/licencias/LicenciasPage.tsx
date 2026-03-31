@@ -10,6 +10,7 @@ import {
   Link2,
 } from "lucide-react";
 import { useLicenciasStore } from "@/store/licencias-store";
+import { useAplicacionesStore } from "@/store/aplicaciones-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -41,14 +42,18 @@ export function LicenciasPage() {
     loading,
     filtro,
     estadoFiltro,
+    aplicacionFiltro,
     licenciaSeleccionada,
     fetchLicencias,
     eliminarLicencia,
     setFiltro,
     setEstadoFiltro,
+    setAplicacionFiltro,
     setLicenciaSeleccionada,
     getLicenciasFiltradas,
   } = useLicenciasStore();
+
+  const { aplicaciones, cargarAplicaciones } = useAplicacionesStore();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [licenciaEditar, setLicenciaEditar] = useState<Licencia | null>(null);
@@ -59,7 +64,8 @@ export function LicenciasPage() {
     fetchLicencias().catch((err) => {
       toast.error("Error al cargar licencias: " + err.message);
     });
-  }, [fetchLicencias]);
+    cargarAplicaciones().catch(() => {});
+  }, [fetchLicencias, cargarAplicaciones]);
 
   const licenciasFiltradas = getLicenciasFiltradas();
 
@@ -139,18 +145,31 @@ export function LicenciasPage() {
           </div>
 
           <Select
+            value={aplicacionFiltro}
+            onValueChange={setAplicacionFiltro}
+            className="w-48"
+          >
+            <SelectOption value="todas">Todas las apps</SelectOption>
+            {aplicaciones.map((app) => (
+              <SelectOption key={app.id} value={app.id}>
+                {app.nombre}
+              </SelectOption>
+            ))}
+          </Select>
+
+          <Select
             value={estadoFiltro}
             onValueChange={(v) =>
               setEstadoFiltro(v as "todas" | "activas" | "inactivas")
             }
-            className="w-40"
+            className="w-36"
           >
             <SelectOption value="todas">Todas</SelectOption>
             <SelectOption value="activas">Activas</SelectOption>
             <SelectOption value="inactivas">Inactivas</SelectOption>
           </Select>
 
-          <Button onClick={handleNueva} className="ml-auto">
+          <Button onClick={handleNueva} className="ml-auto shrink-0">
             <Plus className="h-4 w-4" />
             Nueva licencia
           </Button>
@@ -168,7 +187,7 @@ export function LicenciasPage() {
             <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
               <p className="text-lg">No se encontraron licencias</p>
               <p className="text-sm mt-1">
-                {filtro || estadoFiltro !== "todas"
+                {filtro || estadoFiltro !== "todas" || aplicacionFiltro !== "todas"
                   ? "Intenta cambiar los filtros de búsqueda"
                   : "Crea una nueva licencia para empezar"}
               </p>
@@ -179,6 +198,7 @@ export function LicenciasPage() {
                 <TableRow>
                   <TableHead>Clave</TableHead>
                   <TableHead>Nombre</TableHead>
+                  <TableHead>Aplicación</TableHead>
                   <TableHead>Estado</TableHead>
                   <TableHead>Equipo</TableHead>
                   <TableHead>Permisos</TableHead>
@@ -202,8 +222,17 @@ export function LicenciasPage() {
                     <TableCell className="font-mono text-xs">
                       {lic.clave}
                     </TableCell>
-                    <TableCell className="max-w-[200px] truncate">
+                    <TableCell className="max-w-[180px] truncate">
                       {lic.nombre}
+                    </TableCell>
+                    <TableCell>
+                      {lic.aplicacion ? (
+                        <Badge variant="outline" className="text-xs">
+                          {lic.aplicacion.nombre}
+                        </Badge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       {lic.activa ? (
@@ -240,10 +269,10 @@ export function LicenciasPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="text-sm whitespace-nowrap">
                       {formatDate(lic.vence_en)}
                     </TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="text-sm whitespace-nowrap">
                       {formatCreatedAt(lic.created_at)}
                     </TableCell>
                     <TableCell className="text-right">

@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Shuffle, Save, X, Unlink } from "lucide-react";
 import { useLicenciasStore } from "@/store/licencias-store";
+import { useAplicacionesStore } from "@/store/aplicaciones-store";
 import { generarClave } from "@/lib/generar-clave";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectOption } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -25,16 +27,26 @@ interface ModalLicenciaProps {
 
 export function ModalLicencia({ open, onClose, licencia }: ModalLicenciaProps) {
   const { crearLicencia, actualizarLicencia, desvincularMaquina } = useLicenciasStore();
+  const { aplicaciones, cargarAplicaciones } = useAplicacionesStore();
   const isEditing = !!licencia;
+
+  const appsActivas = aplicaciones.filter((a) => a.activa);
 
   const [nombre, setNombre] = useState("");
   const [clave, setClave] = useState("");
   const [activa, setActiva] = useState(true);
   const [permisos, setPermisos] = useState<Permisos>({ ...DEFAULT_PERMISOS });
   const [venceEn, setVenceEn] = useState("");
+  const [aplicacionId, setAplicacionId] = useState("");
   const [saving, setSaving] = useState(false);
   const [unlinkConfirm, setUnlinkConfirm] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      cargarAplicaciones().catch(() => {});
+    }
+  }, [open, cargarAplicaciones]);
 
   useEffect(() => {
     if (open) {
@@ -45,15 +57,17 @@ export function ModalLicencia({ open, onClose, licencia }: ModalLicenciaProps) {
         setActiva(licencia.activa);
         setPermisos({ ...licencia.permisos });
         setVenceEn(licencia.vence_en ?? "");
+        setAplicacionId(licencia.aplicacion_id ?? "");
       } else {
         setNombre("");
         setClave("");
         setActiva(true);
         setPermisos({ ...DEFAULT_PERMISOS });
         setVenceEn("");
+        setAplicacionId(appsActivas.length === 1 ? appsActivas[0].id : "");
       }
     }
-  }, [open, licencia]);
+  }, [open, licencia, appsActivas.length]);
 
   const handleGenerar = () => {
     setClave(generarClave());
@@ -87,6 +101,10 @@ export function ModalLicencia({ open, onClose, licencia }: ModalLicenciaProps) {
       toast.error("La clave es obligatoria. Usa el botón Generar.");
       return;
     }
+    if (!aplicacionId) {
+      toast.error("Debes seleccionar una aplicación");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -96,6 +114,7 @@ export function ModalLicencia({ open, onClose, licencia }: ModalLicenciaProps) {
           activa,
           permisos,
           vence_en: venceEn || null,
+          aplicacion_id: aplicacionId || null,
         });
         toast.success("Licencia actualizada correctamente");
       } else {
@@ -105,6 +124,7 @@ export function ModalLicencia({ open, onClose, licencia }: ModalLicenciaProps) {
           activa,
           permisos,
           vence_en: venceEn || null,
+          aplicacion_id: aplicacionId || null,
         });
         toast.success("Licencia creada correctamente");
       }
@@ -127,6 +147,23 @@ export function ModalLicencia({ open, onClose, licencia }: ModalLicenciaProps) {
         </DialogHeader>
 
         <div className="mt-4 space-y-4">
+          {/* Aplicación */}
+          <div className="space-y-2">
+            <Label htmlFor="aplicacion">Aplicación</Label>
+            <Select
+              value={aplicacionId}
+              onValueChange={setAplicacionId}
+              className="w-full"
+            >
+              <SelectOption value="">Seleccionar aplicación...</SelectOption>
+              {appsActivas.map((app) => (
+                <SelectOption key={app.id} value={app.id}>
+                  {app.nombre}
+                </SelectOption>
+              ))}
+            </Select>
+          </div>
+
           {/* Nombre */}
           <div className="space-y-2">
             <Label htmlFor="nombre">Nombre</Label>

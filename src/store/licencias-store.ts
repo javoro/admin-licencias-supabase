@@ -2,7 +2,6 @@ import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
 import type { Licencia, LicenciaInsert, LicenciaUpdate } from "@/types/licencia";
 
-// Enriquece mensajes de error de Supabase con instrucciones de solución RLS
 function RLS_HINT(msg: string): string {
   return `${msg}\n\n→ Solución: en el panel de Supabase ve a Table Editor → licencias → Policies y añade políticas para INSERT, UPDATE y DELETE con condición "true".`;
 }
@@ -15,6 +14,7 @@ interface LicenciasState {
   error: string | null;
   filtro: string;
   estadoFiltro: EstadoFiltro;
+  aplicacionFiltro: string;
   licenciaSeleccionada: Licencia | null;
 
   fetchLicencias: () => Promise<void>;
@@ -25,6 +25,7 @@ interface LicenciasState {
   verificarClaveExiste: (clave: string) => Promise<boolean>;
   setFiltro: (filtro: string) => void;
   setEstadoFiltro: (estado: EstadoFiltro) => void;
+  setAplicacionFiltro: (appId: string) => void;
   setLicenciaSeleccionada: (licencia: Licencia | null) => void;
   getLicenciasFiltradas: () => Licencia[];
 }
@@ -35,20 +36,27 @@ export const useLicenciasStore = create<LicenciasState>((set, get) => ({
   error: null,
   filtro: "",
   estadoFiltro: "todas",
+  aplicacionFiltro: "todas",
   licenciaSeleccionada: null,
 
   fetchLicencias: async () => {
     set({ loading: true, error: null });
     const { data, error } = await supabase
       .from("licencias")
-      .select("*")
+      .select("*, aplicacion:aplicaciones(id, nombre, slug)")
       .order("created_at", { ascending: false });
 
     if (error) {
       set({ error: error.message, loading: false });
       throw new Error(error.message);
     }
-    set({ licencias: data as Licencia[], loading: false });
+
+    const licencias = (data || []).map((row: Record<string, unknown>) => ({
+      ...row,
+      aplicacion: row.aplicacion ?? undefined,
+    })) as Licencia[];
+
+    set({ licencias, loading: false });
   },
 
   crearLicencia: async (data: LicenciaInsert) => {
@@ -65,6 +73,7 @@ export const useLicenciasStore = create<LicenciasState>((set, get) => ({
         activa: data.activa,
         permisos: data.permisos,
         vence_en: data.vence_en || null,
+        aplicacion_id: data.aplicacion_id || null,
       })
       .select("id");
 
@@ -78,14 +87,16 @@ export const useLicenciasStore = create<LicenciasState>((set, get) => ({
   },
 
   actualizarLicencia: async (id: string, data: LicenciaUpdate) => {
+    const updatePayload: Record<string, unknown> = {};
+    if (data.nombre !== undefined) updatePayload.nombre = data.nombre;
+    if (data.activa !== undefined) updatePayload.activa = data.activa;
+    if (data.permisos !== undefined) updatePayload.permisos = data.permisos;
+    if (data.vence_en !== undefined) updatePayload.vence_en = data.vence_en || null;
+    if (data.aplicacion_id !== undefined) updatePayload.aplicacion_id = data.aplicacion_id || null;
+
     const { data: updated, error } = await supabase
       .from("licencias")
-      .update({
-        nombre: data.nombre,
-        activa: data.activa,
-        permisos: data.permisos,
-        vence_en: data.vence_en || null,
-      })
+      .update(updatePayload)
       .eq("id", id)
       .select("id");
 
@@ -100,11 +111,11 @@ export const useLicenciasStore = create<LicenciasState>((set, get) => ({
     if (licenciaSeleccionada?.id === id) {
       const { data: refreshed } = await supabase
         .from("licencias")
-        .select("*")
+        .select("*, aplicacion:aplicaciones(id, nombre, slug)")
         .eq("id", id)
         .single();
       if (refreshed) {
-        set({ licenciaSeleccionada: refreshed as Licencia });
+        set({ licenciaSeleccionada: refreshed as unknown as Licencia });
       }
     }
 
@@ -165,17 +176,22 @@ export const useLicenciasStore = create<LicenciasState>((set, get) => ({
 
   setFiltro: (filtro: string) => set({ filtro }),
   setEstadoFiltro: (estadoFiltro: EstadoFiltro) => set({ estadoFiltro }),
+  setAplicacionFiltro: (aplicacionFiltro: string) => set({ aplicacionFiltro }),
   setLicenciaSeleccionada: (licencia: Licencia | null) =>
     set({ licenciaSeleccionada: licencia }),
 
   getLicenciasFiltradas: () => {
-    const { licencias, filtro, estadoFiltro } = get();
+    const { licencias, filtro, estadoFiltro, aplicacionFiltro } = get();
     let resultado = licencias;
 
     if (estadoFiltro === "activas") {
       resultado = resultado.filter((l) => l.activa);
     } else if (estadoFiltro === "inactivas") {
       resultado = resultado.filter((l) => !l.activa);
+    }
+
+    if (aplicacionFiltro !== "todas") {
+      resultado = resultado.filter((l) => l.aplicacion_id === aplicacionFiltro);
     }
 
     if (filtro.trim()) {

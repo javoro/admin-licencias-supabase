@@ -75,6 +75,16 @@ export function DetalleLicencia({ licencia, onClose }: DetalleLicenciaProps) {
           </div>
         </div>
 
+        {/* Aplicación */}
+        <div>
+          <p className="text-xs text-muted-foreground mb-1">Aplicación</p>
+          {licencia.aplicacion ? (
+            <Badge variant="outline">{licencia.aplicacion.nombre}</Badge>
+          ) : (
+            <p className="text-sm text-muted-foreground">Sin asignar</p>
+          )}
+        </div>
+
         {/* Equipo vinculado */}
         <div>
           <p className="text-xs text-muted-foreground mb-1">Equipo vinculado</p>
