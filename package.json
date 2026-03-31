@@ -1,6 +1,6 @@
 {
   "name": "admin-licencias",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Administración de licencias de software",
   "main": "dist-electron/main/main.js",
   "scripts": {
