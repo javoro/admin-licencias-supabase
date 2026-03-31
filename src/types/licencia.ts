@@ -6,6 +6,14 @@ export interface Permisos {
   analytics_filters: boolean;
 }
 
+export interface Aplicacion {
+  id: string;
+  nombre: string;
+  slug: string;
+  activa: boolean;
+  created_at: string;
+}
+
 export interface Licencia {
   id: string;
   clave: string;
@@ -14,11 +22,13 @@ export interface Licencia {
   permisos: Permisos;
   vence_en: string | null;
   machine_id: string | null;
+  aplicacion_id: string | null;
+  aplicacion?: Aplicacion;
   created_at: string;
 }
 
-export type LicenciaInsert = Omit<Licencia, "id" | "created_at" | "machine_id">;
-export type LicenciaUpdate = Partial<Omit<Licencia, "id" | "created_at" | "clave">>;
+export type LicenciaInsert = Omit<Licencia, "id" | "created_at" | "machine_id" | "aplicacion">;
+export type LicenciaUpdate = Partial<Omit<Licencia, "id" | "created_at" | "clave" | "aplicacion">>;
 
 export const PERMISOS_LABELS: Record<keyof Permisos, string> = {
   analytics: "Sección de Analíticas",
